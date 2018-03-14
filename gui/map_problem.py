@@ -9,6 +9,9 @@ from search import breadth_first_tree_search as bfts, depth_first_tree_search as
     astar_search as asts
 from utils import Stack, FIFOQueue, PriorityQueue
 from copy import deepcopy
+from operator import itemgetter
+
+from map_parser import map_parser
 
 root = None
 city_coord = {}
@@ -24,235 +27,65 @@ node = None
 next_button = None
 explored = None
 
+# def map_edge_labels(graph, f):
+#     for k, dist in graph.dict.items():
+#         graph.dict[k] = {k: f(v) for k, v in dist.items()}
+
+def map_node_labels(graph, f):
+    graph.locations = {k: f(v) for k, v in graph.locations.items()}
+
+def fit_to_canvas(graph, width, height):
+    nodes = graph.locations.values()
+    min_x = min(map(itemgetter(0), nodes))
+    min_y = min(map(itemgetter(1), nodes))
+    shift_x = -min_x + 40
+    shift_y = -min_y + 20
+
+    max_x = max(map(itemgetter(0), nodes))
+    max_y = max(map(itemgetter(1), nodes))
+    scale_x = (width - 250) / max_x
+    scale_y = (height - 100) / max_y
+    
+    map_node_labels(map_graph, lambda p: (p[0] * scale_x + shift_x, p[1] * scale_y + shift_y))
+
+width = 750
+height = 670
+map_filename = sys.argv[1] if len(sys.argv) > 1 else "data/cph.txt"
+map_graph = map_parser(map_filename)
+fit_to_canvas(map_graph, width, height)
+
+# map_edge_labels(map_graph, lambda x: x * 50)
 
 def create_map(root):
     '''
     This function draws out the required map.
     '''
     global city_map, start, goal
-    romania_locations = romania_map.locations
-    width = 750
-    height = 670
+    map_graph_locations = map_graph.locations
     margin = 5
     city_map = Canvas(root, width=width, height=height)
     city_map.pack()
 
     # Since lines have to be drawn between particular points, we need to list
     # them separately
-    make_line(
-        city_map,
-        romania_locations['Arad'][0],
-        height -
-        romania_locations['Arad'][1],
-        romania_locations['Sibiu'][0],
-        height -
-        romania_locations['Sibiu'][1],
-        romania_map.get('Arad', 'Sibiu'))
-    make_line(
-        city_map,
-        romania_locations['Arad'][0],
-        height -
-        romania_locations['Arad'][1],
-        romania_locations['Zerind'][0],
-        height -
-        romania_locations['Zerind'][1],
-        romania_map.get('Arad', 'Zerind'))
-    make_line(
-        city_map,
-        romania_locations['Arad'][0],
-        height -
-        romania_locations['Arad'][1],
-        romania_locations['Timisoara'][0],
-        height -
-        romania_locations['Timisoara'][1],
-        romania_map.get('Arad', 'Timisoara'))
-    make_line(
-        city_map,
-        romania_locations['Oradea'][0],
-        height -
-        romania_locations['Oradea'][1],
-        romania_locations['Zerind'][0],
-        height -
-        romania_locations['Zerind'][1],
-        romania_map.get('Oradea', 'Zerind'))
-    make_line(
-        city_map,
-        romania_locations['Oradea'][0],
-        height -
-        romania_locations['Oradea'][1],
-        romania_locations['Sibiu'][0],
-        height -
-        romania_locations['Sibiu'][1],
-        romania_map.get('Oradea', 'Sibiu'))
-    make_line(
-        city_map,
-        romania_locations['Lugoj'][0],
-        height -
-        romania_locations['Lugoj'][1],
-        romania_locations['Timisoara'][0],
-        height -
-        romania_locations['Timisoara'][1],
-        romania_map.get('Lugoj', 'Timisoara'))
-    make_line(
-        city_map,
-        romania_locations['Lugoj'][0],
-        height -
-        romania_locations['Lugoj'][1],
-        romania_locations['Mehadia'][0],
-        height -
-        romania_locations['Mehadia'][1],
-        romania_map.get('Lugoj', 'Mehadia'))
-    make_line(
-        city_map,
-        romania_locations['Drobeta'][0],
-        height -
-        romania_locations['Drobeta'][1],
-        romania_locations['Mehadia'][0],
-        height -
-        romania_locations['Mehadia'][1],
-        romania_map.get('Drobeta', 'Mehadia'))
-    make_line(
-        city_map,
-        romania_locations['Drobeta'][0],
-        height -
-        romania_locations['Drobeta'][1],
-        romania_locations['Craiova'][0],
-        height -
-        romania_locations['Craiova'][1],
-        romania_map.get('Drobeta', 'Craiova'))
-    make_line(
-        city_map,
-        romania_locations['Pitesti'][0],
-        height -
-        romania_locations['Pitesti'][1],
-        romania_locations['Craiova'][0],
-        height -
-        romania_locations['Craiova'][1],
-        romania_map.get('Pitesti', 'Craiova'))
-    make_line(
-        city_map,
-        romania_locations['Rimnicu'][0],
-        height -
-        romania_locations['Rimnicu'][1],
-        romania_locations['Craiova'][0],
-        height -
-        romania_locations['Craiova'][1],
-        romania_map.get('Rimnicu', 'Craiova'))
-    make_line(
-        city_map,
-        romania_locations['Rimnicu'][0],
-        height -
-        romania_locations['Rimnicu'][1],
-        romania_locations['Sibiu'][0],
-        height -
-        romania_locations['Sibiu'][1],
-        romania_map.get('Rimnicu', 'Sibiu'))
-    make_line(
-        city_map,
-        romania_locations['Rimnicu'][0],
-        height -
-        romania_locations['Rimnicu'][1],
-        romania_locations['Pitesti'][0],
-        height -
-        romania_locations['Pitesti'][1],
-        romania_map.get('Rimnicu', 'Pitesti'))
-    make_line(
-        city_map,
-        romania_locations['Bucharest'][0],
-        height -
-        romania_locations['Bucharest'][1],
-        romania_locations['Pitesti'][0],
-        height -
-        romania_locations['Pitesti'][1],
-        romania_map.get('Bucharest', 'Pitesti'))
-    make_line(
-        city_map,
-        romania_locations['Fagaras'][0],
-        height -
-        romania_locations['Fagaras'][1],
-        romania_locations['Sibiu'][0],
-        height -
-        romania_locations['Sibiu'][1],
-        romania_map.get('Fagaras', 'Sibiu'))
-    make_line(
-        city_map,
-        romania_locations['Fagaras'][0],
-        height -
-        romania_locations['Fagaras'][1],
-        romania_locations['Bucharest'][0],
-        height -
-        romania_locations['Bucharest'][1],
-        romania_map.get('Fagaras', 'Bucharest'))
-    make_line(
-        city_map,
-        romania_locations['Giurgiu'][0],
-        height -
-        romania_locations['Giurgiu'][1],
-        romania_locations['Bucharest'][0],
-        height -
-        romania_locations['Bucharest'][1],
-        romania_map.get('Giurgiu', 'Bucharest'))
-    make_line(
-        city_map,
-        romania_locations['Urziceni'][0],
-        height -
-        romania_locations['Urziceni'][1],
-        romania_locations['Bucharest'][0],
-        height -
-        romania_locations['Bucharest'][1],
-        romania_map.get('Urziceni', 'Bucharest'))
-    make_line(
-        city_map,
-        romania_locations['Urziceni'][0],
-        height -
-        romania_locations['Urziceni'][1],
-        romania_locations['Hirsova'][0],
-        height -
-        romania_locations['Hirsova'][1],
-        romania_map.get('Urziceni', 'Hirsova'))
-    make_line(
-        city_map,
-        romania_locations['Eforie'][0],
-        height -
-        romania_locations['Eforie'][1],
-        romania_locations['Hirsova'][0],
-        height -
-        romania_locations['Hirsova'][1],
-        romania_map.get('Eforie', 'Hirsova'))
-    make_line(
-        city_map,
-        romania_locations['Urziceni'][0],
-        height -
-        romania_locations['Urziceni'][1],
-        romania_locations['Vaslui'][0],
-        height -
-        romania_locations['Vaslui'][1],
-        romania_map.get('Urziceni', 'Vaslui'))
-    make_line(
-        city_map,
-        romania_locations['Iasi'][0],
-        height -
-        romania_locations['Iasi'][1],
-        romania_locations['Vaslui'][0],
-        height -
-        romania_locations['Vaslui'][1],
-        romania_map.get('Iasi', 'Vaslui'))
-    make_line(
-        city_map,
-        romania_locations['Iasi'][0],
-        height -
-        romania_locations['Iasi'][1],
-        romania_locations['Neamt'][0],
-        height -
-        romania_locations['Neamt'][1],
-        romania_map.get('Iasi', 'Neamt'))
+    for (city_from, dist) in map_graph.dict.items():
+        for city_to in dist.keys():
+            make_line(
+                city_map,
+                map_graph_locations[city_from][0],
+                height -
+                map_graph_locations[city_from][1],
+                map_graph_locations[city_to][0],
+                height -
+                map_graph_locations[city_to][1],
+                map_graph.get(city_from, city_to))
 
-    for city in romania_locations.keys():
+    for city in map_graph_locations.keys():
         make_rectangle(
             city_map,
-            romania_locations[city][0],
+            map_graph_locations[city][0],
             height -
-            romania_locations[city][1],
+            map_graph_locations[city][1],
             margin,
             city)
 
@@ -529,7 +362,7 @@ def on_click():
     This function defines the action of the 'Next' button.
     '''
     global algo, counter, next_button, romania_problem, start, goal
-    romania_problem = GraphProblem(start.get(), goal.get(), romania_map)
+    romania_problem = GraphProblem(start.get(), goal.get(), map_graph)
     if "Breadth-First Tree Search" == algo.get():
         node = breadth_first_tree_search(romania_problem)
         if node is not None:
@@ -592,16 +425,16 @@ def reset_map():
 
 def main():
     global algo, start, goal, next_button
+    cities = list(sorted(map_graph.locations.keys()))
     root = Tk()
     root.title("Road Map of Romania")
     root.geometry("950x1150")
     algo = StringVar(root)
     start = StringVar(root)
     goal = StringVar(root)
-    algo.set("Breadth-First Tree Search")
-    start.set('Arad')
-    goal.set('Bucharest')
-    cities = sorted(romania_map.locations.keys())
+    algo.set("Breadth-First Search")
+    start.set(cities[0])
+    goal.set(cities[-1])
     algorithm_menu = OptionMenu(
         root,
         algo, "Breadth-First Tree Search", "Depth-First Tree Search",
